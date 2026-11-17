@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import { useGetProjectsQuery, useGetTasksQuery, useGetUsersQuery } from '../store/api';
-import { useAppSelector } from '../store';
+import { useGetProjectsQuery } from '../features/projects/projectsApi';
+import { useGetTasksQuery } from '../features/tasks/tasksApi';
+import { useGetUsersQuery } from '../features/team/usersApi';
+import { useCurrentUser } from './useAuth';
 import type { Project, Task, User } from '../types';
 
 const NO_PROJECTS: Project[] = [];
@@ -15,7 +17,7 @@ const NO_USERS: User[] = [];
  *  - member:  projects they belong to, and only tasks assigned to them
  */
 export function useScopedData() {
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useCurrentUser();
   const projectsQ = useGetProjectsQuery();
   const tasksQ = useGetTasksQuery();
   const usersQ = useGetUsersQuery();
@@ -37,6 +39,12 @@ export function useScopedData() {
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
   const projectById = useMemo(() => new Map(allProjects.map((p) => [p.id, p])), [allProjects]);
 
+  const refetch = () => {
+    void projectsQ.refetch();
+    void tasksQ.refetch();
+    void usersQ.refetch();
+  };
+
   return {
     user,
     users,
@@ -45,6 +53,7 @@ export function useScopedData() {
     projects: scoped.projects,
     tasks: scoped.tasks,
     isLoading: projectsQ.isLoading || tasksQ.isLoading || usersQ.isLoading,
-    isError: projectsQ.isError || tasksQ.isError,
+    isError: projectsQ.isError || tasksQ.isError || usersQ.isError,
+    refetch,
   };
 }
